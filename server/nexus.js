@@ -2,18 +2,18 @@ const mongoose = require("mongoose");
 const EntrySchema = require("./schema/dict");
 
 const pullNumber = (str, target) => {
-  let extract = new RegExp(
-    '"word":"' + target + '","number":([0-9]+),"head":([a-z]+),"spam":([a-z]+)'
-  );
-  const pulled = str.match(extract);
-  // if (target === "deliveroo") {
-  //   console.log(str);
-  // }
-  if (pulled === null) {
-    return null;
-  } else {
-    return pulled;
-  }
+  let pulled = target.map((v) => {
+    let extract = new RegExp(
+      '"word":"' + v + '","number":([0-9]+),"head":([a-z]+),"spam":([a-z]+)'
+    );
+    const pulled = str.match(extract);
+    if (!pulled) {
+      return null;
+    }
+    return { word: v, number: pulled[1], head: pulled[2], spam: pulled[3] };
+  });
+
+  return pulled;
 };
 
 const insertOne = async (letter, word) => {
@@ -28,6 +28,38 @@ const updateOne = async (letter, word, obj) => {
   let updated = await EntrySchema.findOneAndUpdate(
     { key: letter },
     { entries: [...obj.entries, { word, number: 0, head: true, spam: true }] }
+  );
+  await updated.save();
+};
+const updateMany = async (letter, word, obj, pulledData) => {
+  let stringIfy = JSON.stringify(obj.entries);
+  let ret = [];
+  let append = pulledData.forEach((v, i) => {
+    console.log(
+      `one of words not in db at letter ${letter} at word ${word[i]}`
+    );
+    if (!v) {
+      let _id = new mongoose.Types.ObjectId();
+      ret.push({
+        word: word[i],
+        number: 0,
+        head: true,
+        spam: true,
+        _id,
+      });
+    } else {
+      console.log(`incrementing word  at letter ${letter} at word ${word[i]}`);
+      let rep = new RegExp(`"word":"${word[i]}","number":([0-9]+)`);
+      let match = stringIfy.replace(
+        rep,
+        `"word":"${word[i]}","number":${parseInt(v.number) + 1}`
+      );
+      ret.push(JSON.parse(match)[0]);
+    }
+  });
+  let updated = await EntrySchema.findOneAndUpdate(
+    { key: letter },
+    { entries: ret }
   );
   await updated.save();
 };
@@ -46,23 +78,32 @@ const upsertOne = async (letter, word, obj, prevNum) => {
   await updated.save();
 };
 
-const updateDispatch = async (obj, index, i) => {
-  if (obj) {
-    const flatten = JSON.stringify(obj);
-    const pulledData = pullNumber(flatten, i);
+const updateDispatch = async (letter, word, object) => {
+  if (object) {
+    let long = letter.length > 1;
+    const flatten = JSON.stringify(object);
+    const pulledData = pullNumber(flatten, word, long);
+
+    if (pulledData.includes(null)) {
+      updateMany(letter, word, object, pulledData);
+    } else {
+      console.log(pulledData);
+    }
+
+    return;
     // pulled data returns null if no match; if word not in db
     if (pulledData === null) {
-      console.log(`word not in db at letter ${index} at word ${i}`);
-      updateOne(index, i, obj);
+      console.log(`word not in db at letter ${letter} at word ${word}`);
+      updateOne(letter, word, object);
     } else {
-      console.log(`incrementing letter ${index} at word ${i}`);
+      console.log(`incrementing letter ${letter} at word ${wprd}`);
       const [_, prevNum, head, spam] = pulledData;
-      upsertOne(index, i, obj, prevNum);
+      upsertOne(letter, word, object, prevNum);
     }
     // else update word
-  } else {
-    console.log(`creating new letter ${index} at word ${i}`);
-    insertOne(index, i);
+    // } else {
+    //   console.log(`creating new letter ${letter} at word ${word}`);
+    //   insertOne(letter, word);
   }
 };
 
@@ -81,22 +122,17 @@ const flattenDispatch = (arr) => {
       ret[v[0]] = [v];
     }
   });
-  return Object.entries(ret)
-    .flat()
-    .filter((v) => {
-      return Array.isArray(v);
-    });
+  return ret;
 };
 
 exports.dispatchWords = (input) => {
-  let alph = "abcdefghijklmnopqrstuvwxyz".split("");
   sortedInput = input.sort((a, b) => a.localeCompare(b));
   let flattened = flattenDispatch(sortedInput);
-  console.log(flattened);
-
+  Object.keys(flattened).map(async (v) => {
+    let wordArr = flattened[v];
+    let docu = await EntrySchema.findOne({ key: v });
+    await updateDispatch(v, wordArr, docu);
+  });
   // input.map(async (i) => {
-  //   let index = alph.includes(i.slice(0, 1)) ? i.slice(0, 1) : "misc";
-  //   let docu = await EntrySchema.findOne({ key: index });
-  //   await updateDispatch(docu, index, i);
   // });
 };
