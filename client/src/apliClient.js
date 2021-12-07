@@ -21,6 +21,11 @@ class apiClient {
   }
 
   // master filter/logic
+  nexusInterface(msg, keep) {
+    const nexRet = nexus(msg, keep);
+    return nexRet;
+  }
+  // master filter/logic
   async updateDictionary(msg, keep) {
     const nexRet = nexus(msg, keep);
     // const res = await this.makeCall(url + "/update", data);

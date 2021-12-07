@@ -10,6 +10,16 @@ const App = () => {
   // const [profile, setProfile] = useState({});
   const [loaded, setLoaded] = useState(false);
 
+  const loadNext = () => {
+    console.log("test");
+    setMessages((prev) => {
+      var ary = [...prev];
+      let first = ary.shift();
+      ary.push(first);
+      return ary;
+    });
+  };
+
   useEffect(() => {
     var CLIENT_ID =
       "250089927544-l604497jqg597fturj6c5o03hkfaljmm.apps.googleusercontent.com";
@@ -87,6 +97,7 @@ const App = () => {
     //   );
     // });
   };
+
   useEffect(() => {
     if (!loaded) {
       return;
@@ -96,14 +107,18 @@ const App = () => {
     get();
   }, [loaded]);
 
-  // useEffect(() => {
-  //   get();
-  // }, []);
+  useEffect(() => {
+    get();
+  }, []);
 
   return (
     <div className="appContainer">
-      {/* <button onClick={() => get()}>Get Messages</button> */}
-      <Dashboard messages={messages} client={client}></Dashboard>
+      <button onClick={() => loadNext()}>Get Messages</button>
+      <Dashboard
+        messages={messages}
+        client={client}
+        loadNext={loadNext}
+      ></Dashboard>
       {/* <ul>
         {messages.map((message, k) => (
           <li key="message.id" key={k}>

@@ -1,4 +1,4 @@
-#gmail-api-notification-block,
+/* #gmail-api-notification-block,
 #gmail-api-notification-text-block {
   display: none !important;
   box-shadow: none !important;
@@ -43,4 +43,28 @@
   width: 10px;
   margin: 2px;
   background-color: lightgray;
+} */
+
+/* interimCss */
+.spamContainer {
+  width: 50vw;
+  background-color: lightcyan;
+  position: absolute;
+}
+.mailContainer {
+  width: 50vw;
+  background-color: lightgoldenrodyellow;
+  position: absolute;
+  right: 0;
+  text-align: right;
+}
+.stage02Container {
+  height: 105vh;
+}
+.stage03Container {
+  height: 100vh;
+  background-color: lightsalmon;
+}
+h3 {
+  margin: 0px;
 }
